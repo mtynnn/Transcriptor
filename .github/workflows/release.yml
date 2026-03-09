@@ -26,6 +26,16 @@ jobs:
         with:
           python-version: '3.11'
           
+      - name: create credentials file
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.GOOGLE_CREDENTIALS_JSON }}" ]; then
+            echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > backend/credentials.json
+          else
+            echo "{}" > backend/credentials.json
+            echo "Warning: GOOGLE_CREDENTIALS_JSON secret not found. Build may continue but Drive might not work properly if not provided later."
+          fi
+
       - name: install python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -46,6 +56,8 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PASSWORD: ${{ secrets.TAURI_SIGNING_PASSWORD }}
         with:
           tagName: v__VERSION__ 
           releaseName: 'vTranscriptor v__VERSION__'
