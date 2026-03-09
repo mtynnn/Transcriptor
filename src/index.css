@@ -1,0 +1,230 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --accent: #10b981;
+  --danger: #ef4444;
+}
+
+.theme-dark {
+  --background: #0a0a0c;
+  --foreground: #f8fafc;
+  --secondary: #1e293b;
+  --border: #334155;
+  --card: #111827;
+  --card-hover: #1f2937;
+  --muted: #64748b;
+  --glass: rgba(17, 24, 39, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --sidebar: #0d0d10;
+  --header: rgba(10, 10, 12, 0.8);
+  --footer: #08080a;
+  --primary: #3b82f6;
+  --primary-rgb: 59, 130, 246;
+}
+
+.theme-light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --secondary: #f1f5f9;
+  --border: #e2e8f0;
+  --card: #ffffff;
+  --card-hover: #f8fafc;
+  --muted: #64748b;
+  --glass: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --sidebar: #f1f5f9;
+  --header: rgba(255, 255, 255, 0.8);
+  --footer: #e2e8f0;
+  --primary: #2563eb;
+  --primary-rgb: 37, 99, 235;
+}
+
+.theme-pink {
+  --background: #fff1f2;
+  --foreground: #881337;
+  --secondary: #ffe4e6;
+  --border: #fecdd3;
+  --card: #ffffff;
+  --card-hover: #fff1f2;
+  --muted: #be123c;
+  --primary: #db2777;
+  --primary-rgb: 219, 39, 119;
+  --glass: rgba(255, 241, 242, 0.8);
+  --glass-border: rgba(219, 39, 119, 0.1);
+  --sidebar: #ffe4e6;
+  --header: rgba(255, 241, 242, 0.8);
+  --footer: #fecdd3;
+}
+
+.theme-green {
+  --background: #f0fdf4;
+  --foreground: #14532d;
+  --secondary: #dcfce7;
+  --border: #bbf7d0;
+  --card: #ffffff;
+  --card-hover: #f0fdf4;
+  --muted: #15803d;
+  --primary: #16a34a;
+  --primary-rgb: 22, 163, 74;
+  --glass: rgba(240, 253, 244, 0.8);
+  --glass-border: rgba(22, 163, 74, 0.1);
+  --sidebar: #dcfce7;
+  --header: rgba(240, 253, 244, 0.8);
+  --footer: #bbf7d0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow-x: hidden;
+  height: 100vh;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.glass-morphism {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.premium-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.premium-card:hover {
+  border-color: var(--primary);
+  background: var(--card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: scale(1.02);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: white;
+  border: 1px solid var(--border);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.fade-in {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+/* Custom Date Picker Styles */
+::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+::-webkit-calendar-picker-indicator:hover {
+  filter: invert(1);
+  background: var(--primary);
+  opacity: 1;
+}
+
+.theme-dark ::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+.theme-light ::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
+/* Date input aesthetic polish */
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 20;
+}
+
+input[type="date"] {
+    position: relative;
+}
+
+/* Custom dropdown scrollbar */
+.max-h-48::-webkit-scrollbar {
+  width: 4px;
+}
+.max-h-48::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}

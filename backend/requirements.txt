@@ -1,0 +1,15 @@
+faster-whisper
+python-pptx
+python-docx
+yake
+fastapi
+uvicorn
+python-multipart
+pydantic
+pypdf
+pywebview
+requests
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+torch
