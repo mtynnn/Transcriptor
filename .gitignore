@@ -32,7 +32,6 @@ backend/credentials.json
 backend/temp_downloads/
 history.json
 settings.json
-*.spec
 build_log.txt
 build_log_onefile.txt
 __pycache__/
