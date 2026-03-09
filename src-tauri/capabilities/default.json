@@ -6,7 +6,7 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "shell:allow-vtranscriptor-engine",
-    "dialog:default"
+    "dialog:default",
+    "vtranscriptor-engine-perm"
   ]
 }

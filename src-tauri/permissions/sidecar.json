@@ -1,0 +1,15 @@
+{
+  "identifier": "vtranscriptor-engine-perm",
+  "description": "Permitir spawnear el sidecar vtranscriptor-engine",
+  "permissions": [
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "vtranscriptor-engine",
+          "sidecar": true
+        }
+      ]
+    }
+  ]
+}
