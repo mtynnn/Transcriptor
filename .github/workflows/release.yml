@@ -4,6 +4,10 @@ on:
     tags:
       - "v*"
 
+# Permisos para crear releases en GitHub
+permissions:
+  contents: write
+
 jobs:
   release:
     permissions:
