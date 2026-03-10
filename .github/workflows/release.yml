@@ -20,11 +20,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: "npm"
 
       - name: setup python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      # Cache pip packages (ahorra ~3 min)
+      - name: cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Cache Rust build artifacts (ahorra ~7 min)
+      - name: cache rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
 
       - name: create credentials file
         shell: bash
@@ -33,7 +49,7 @@ jobs:
             echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > backend/credentials.json
           else
             echo "{}" > backend/credentials.json
-            echo "Warning: GOOGLE_CREDENTIALS_JSON secret not found. Build may continue but Drive might not work properly if not provided later."
+            echo "Warning: GOOGLE_CREDENTIALS_JSON secret not found."
           fi
 
       - name: install python dependencies
