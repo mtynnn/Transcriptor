@@ -7,6 +7,23 @@
     "core:default",
     "opener:default",
     "dialog:default",
-    "vtranscriptor-engine-perm"
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "bin/vtranscriptor-engine",
+          "sidecar": true
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "bin/vtranscriptor-engine",
+          "sidecar": true
+        }
+      ]
+    }
   ]
 }
