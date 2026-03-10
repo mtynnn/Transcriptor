@@ -4,9 +4,15 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
+# Recolectar archivos de datos de faster_whisper (incluye silero_vad_v6.onnx y assets)
 datas = [
-    ('backend/credentials.json', '.'), 
+    ('backend/credentials.json', '.'),
 ]
+
+# Incluir los assets de faster_whisper automáticamente
+datas += collect_data_files('faster_whisper')
+# Incluir los assets de ctranslate2 (motor de inferencia)
+datas += collect_data_files('ctranslate2')
 
 hiddenimports = [
     'uvicorn.logging',
@@ -18,7 +24,9 @@ hiddenimports = [
     'uvicorn.lifespan',
     'uvicorn.lifespan.on',
     'faster_whisper',
+    'ctranslate2',
     'docx',
+    'onnxruntime',
 ]
 
 a = Analysis(
