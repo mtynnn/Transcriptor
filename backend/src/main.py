@@ -128,6 +128,15 @@ class DriveUploadRequest(BaseModel):
     title: str
     category: str
 
+class HistoryUpdateRequest(BaseModel):
+    real_date: str
+    title: str
+    new_text: str
+
+class HistoryDeleteRequest(BaseModel):
+    real_date: str
+    title: str
+
 # Endpoints
 @app.get("/")
 def read_root():
@@ -145,6 +154,26 @@ def get_prog():
 async def fetch_history():
     print("API: Solicitud de historial recibida")
     return get_history()
+
+@app.post("/history/update")
+def update_history_item(req: HistoryUpdateRequest):
+    history = get_history()
+    for item in history:
+        if item.get("real_date") == req.real_date and item.get("title") == req.title:
+            item["full_text"] = req.new_text
+            item["text"] = req.new_text[:200] + "..."
+            break
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+    return {"status": "ok"}
+
+@app.post("/history/delete")
+def delete_history_item(req: HistoryDeleteRequest):
+    history = get_history()
+    history = [item for item in history if not (item.get("real_date") == req.real_date and item.get("title") == req.title)]
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+    return {"status": "ok"}
 
 @app.get("/settings")
 async def fetch_settings():
@@ -215,7 +244,7 @@ def transcribe_audio(request: TranscriptionRequest):
         text_result = _transcriber_instance.format_to_fluid_paragraphs(segments)
 
         # Registro en Historial con Metadatos
-        save_history({
+        history_entry = {
             "date": request.custom_date or datetime.now().strftime("%Y-%m-%d %H:%M"),
             "real_date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "title": request.title,
@@ -223,7 +252,8 @@ def transcribe_audio(request: TranscriptionRequest):
             "audio": os.path.basename(request.audio_path),
             "text": text_result[:200] + "...",
             "full_text": text_result
-        })
+        }
+        save_history(history_entry)
 
         # Autoguardado de seguridad
         try:
@@ -231,7 +261,7 @@ def transcribe_audio(request: TranscriptionRequest):
         except:
             pass
         
-        return {"text": text_result, "success": True}
+        return {"text": text_result, "success": True, "history_item": history_entry}
     except Exception as e:
         current_progress = 0
         print(f"API Error: {e}")

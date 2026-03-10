@@ -25,6 +25,7 @@ import {
   Library,
   ChevronLeft,
   ChevronRight,
+  Save,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -51,6 +52,7 @@ declare global {
 
 export default function App() {
   const [activeStep, setActiveStep] = useState(1); // 1: Upload, 2: Transcribing, 3: Editor
+  const [activeHistoryItem, setActiveHistoryItem] = useState<any>(null);
   const [audioPath, setAudioPath] = useState<string>("");
   const [contextPath, setContextPath] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -369,6 +371,7 @@ export default function App() {
       const data = await response.json();
       setProgress(100);
       setTranscription(data.text);
+      if (data.history_item) setActiveHistoryItem(data.history_item);
       setIsProcessing(false);
       setActiveStep(3);
     } catch (e: any) {
@@ -376,6 +379,76 @@ export default function App() {
       setErrorMsg(e.message || "Error desconocido");
       setIsProcessing(false);
       setActiveStep(1);
+    }
+  };
+
+  const reloadHistory = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/history");
+      const data = await res.json();
+      if (data && Array.isArray(data)) {
+        setHistoryItems(data);
+        const cats = Array.from(
+          new Set(data.map((h: any) => h.category || "General")),
+        );
+        if (cats.length > 0)
+          setAvailableCategories((prev) =>
+            Array.from(new Set([...prev, ...(cats as string[])])),
+          );
+      }
+    } catch (e) {
+      console.error("Error reloading history:", e);
+    }
+  };
+
+  const handleSaveTranscription = async () => {
+    if (!activeHistoryItem) return;
+    try {
+      setSaveStatus("Guardando cambios...");
+      const res = await fetch("http://localhost:8000/history/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          real_date: activeHistoryItem.real_date,
+          title: activeHistoryItem.title,
+          new_text: transcription
+        })
+      });
+      if (res.ok) {
+        setSaveStatus("Cambios guardados");
+        setTimeout(() => setSaveStatus(""), 2000);
+        
+        // Actualizamos el activeHistoryItem actual con el texto nuevo
+        setActiveHistoryItem({ ...activeHistoryItem, full_text: transcription });
+        await reloadHistory();
+      }
+    } catch (e) {
+      console.error(e);
+      setSaveStatus("Error al guardar");
+      setTimeout(() => setSaveStatus(""), 2000);
+    }
+  };
+
+  const handleDeleteHistoryItem = async (e: any, item: any) => {
+    e.stopPropagation(); // Evitar que abra el editor
+    if (!confirm(`¿Eliminar la transcripción "${item.title || "Sin Título"}" de manera permanente?`)) return;
+    try {
+      await fetch("http://localhost:8000/history/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          real_date: item.real_date,
+          title: item.title
+        })
+      });
+      if (activeHistoryItem && activeHistoryItem.real_date === item.real_date && activeHistoryItem.title === item.title) {
+        // Cerramos si estamos editando el item que se borra
+        setActiveStep(1);
+        setActiveHistoryItem(null);
+      }
+      await reloadHistory();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -495,6 +568,7 @@ export default function App() {
     setTranscription(item.full_text);
     setTranscriptionTitle(item.title || "Importado");
     setCategory(item.category || "General");
+    setActiveHistoryItem(item);
     setActiveStep(3);
     setShowHistory(false);
   };
@@ -1362,6 +1436,16 @@ export default function App() {
                           <Clock size={12} /> {readingTime} min de lectura
                         </span>
                       </div>
+                      
+                      {activeHistoryItem && (
+                        <button
+                          onClick={handleSaveTranscription}
+                          className="bg-[var(--primary)] bg-opacity-10 hover:bg-opacity-20 text-[var(--primary)] px-4 py-1.5 rounded-full flex items-center gap-2 transition-all shadow-sm"
+                        >
+                          <Save size={14} />
+                          Guardar Cambios
+                        </button>
+                      )}
                     </div>
                     <textarea
                       className="w-full h-[500px] bg-transparent p-10 text-[var(--foreground)] text-lg leading-relaxed focus:outline-none resize-none border-none selection:bg-[var(--primary)] selection:bg-opacity-30"
@@ -1531,8 +1615,17 @@ export default function App() {
                               <h4 className="font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors text-lg">
                                 {item.title || "Sin Título"}
                               </h4>
-                              <div className="p-1.5 rounded-md bg-[var(--secondary)] text-[var(--muted)]">
-                                <FileText size={16} />
+                              <div className="flex gap-2 items-center">
+                                <button
+                                  onClick={(e) => handleDeleteHistoryItem(e, item)}
+                                  className="p-1.5 rounded-md text-red-500 hover:bg-red-500 hover:text-white bg-red-500 bg-opacity-10 transition-colors"
+                                  title="Borrar permanentemente"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                                <div className="p-1.5 rounded-md bg-[var(--secondary)] text-[var(--muted)]">
+                                  <FileText size={16} />
+                                </div>
                               </div>
                             </div>
                             <p className="text-[11px] text-[var(--muted)] line-clamp-2 italic leading-relaxed mb-4 relative z-10">
@@ -1637,9 +1730,18 @@ export default function App() {
                           {item.title || "Sin Título"}
                         </h4>
                       </div>
-                      <span className="text-[var(--muted)] text-[10px] font-medium">
-                        {item.date}
-                      </span>
+                      <div className="flex gap-4 items-center">
+                        <span className="text-[var(--muted)] text-[10px] font-medium">
+                          {item.date}
+                        </span>
+                        <button
+                          onClick={(e) => handleDeleteHistoryItem(e, item)}
+                          className="text-[var(--muted)] hover:text-red-500 transition-colors"
+                          title="Borrar permanentemente"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                     <p className="text-xs text-[var(--muted)] line-clamp-2 italic leading-relaxed">
                       "{item.text}"
