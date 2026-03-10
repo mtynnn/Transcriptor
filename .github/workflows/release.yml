@@ -92,5 +92,5 @@ jobs:
           tagName: v__VERSION__
           releaseName: "vTranscriptor v__VERSION__"
           releaseBody: "🤖 vTranscriptor: Ahora con instalador One-Click y Google Drive."
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false

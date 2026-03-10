@@ -59,7 +59,7 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
-  const [theme, setTheme] = useState("dark"); // 'dark', 'light', 'pink', 'green'
+  const [theme, setTheme] = useState(() => localStorage.getItem('vtranscriptor_theme') || 'dark'); // persistencia local inmediata
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [historyItems, setHistoryItems] = useState<any[]>([]);
@@ -133,6 +133,37 @@ export default function App() {
       }
     };
     checkForUpdates();
+  }, []);
+
+  // Drag & Drop con rutas reales (Tauri 2.0)
+  useEffect(() => {
+    if (!window.__TAURI_INTERNALS__) return;
+    let unlisten: (() => void) | null = null;
+    const setupFileDrop = async () => {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const win = getCurrentWindow();
+        unlisten = await win.onDragDropEvent((event) => {
+          if (event.payload.type === 'drop') {
+            const paths: string[] = event.payload.paths;
+            if (paths.length === 0) return;
+            const firstPath = paths[0];
+            const ext = firstPath.split('.').pop()?.toLowerCase() || '';
+            const audioExts = ['mp3', 'wav', 'm4a', 'ogg', 'flac', 'mp4', 'webm'];
+            const docExts = ['pdf', 'docx', 'txt', 'doc'];
+            if (audioExts.includes(ext)) {
+              setAudioPath(firstPath);
+            } else if (docExts.includes(ext)) {
+              setContextPath(firstPath);
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Error al configurar drag&drop:', e);
+      }
+    };
+    setupFileDrop();
+    return () => { unlisten?.(); };
   }, []);
 
   // 1. Cargar persistencia al iniciar
@@ -219,8 +250,10 @@ export default function App() {
     }
   };
 
-  // 2. Guardar persistencia ante cambios
+  // 2. Guardar persistencia ante cambios (localStorage inmediato + backend)
   useEffect(() => {
+    // Guardar en localStorage inmediatamente (disponible sin backend)
+    localStorage.setItem('vtranscriptor_theme', theme);
     const syncSettings = async () => {
       try {
         await fetch("http://localhost:8000/settings", {
@@ -387,14 +420,26 @@ export default function App() {
     }
   };
 
+  // Drop handler para modo navegador (fallback)
   const handleAudioDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    // In webview, drop might not give full path due to security,
-    // better to use the button for local absolute paths.
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      // En el navegador, creamos una URL de objeto para previsualizar
+      const url = URL.createObjectURL(file);
+      setAudioPath(url);
+    }
   };
 
   const handleContextDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      const url = URL.createObjectURL(file);
+      setContextPath(url);
+    }
   };
 
   const loadHistory = async () => {
