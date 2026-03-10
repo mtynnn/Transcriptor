@@ -1,10 +1,10 @@
 from faster_whisper import WhisperModel
 import os
 from docx import Document
-import torch
 
 class AudioTranscriber:
     def __init__(self, model_size="base", compute_type="int8", device="auto"):
+        import torch
         """
         Inicializa Faster-Whisper. Detecta automáticamente si hay GPU (CUDA).
         """

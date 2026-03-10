@@ -94,3 +94,5 @@ jobs:
           releaseBody: "🤖 vTranscriptor: Ahora con instalador One-Click y Google Drive."
           releaseDraft: false
           prerelease: false
+          includeUpdaterJson: true
+          includeRelease: true

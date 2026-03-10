@@ -60,7 +60,9 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
   const [deviceInfo, setDeviceInfo] = useState("Detectando hardware...");
-  const [theme, setTheme] = useState(() => localStorage.getItem('vtranscriptor_theme') || 'dark'); // persistencia local inmediata
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("vtranscriptor_theme") || "dark",
+  ); // persistencia local inmediata
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [historyItems, setHistoryItems] = useState<any[]>([]);
@@ -115,22 +117,22 @@ export default function App() {
     const checkForUpdates = async () => {
       if (!window.__TAURI_INTERNALS__) return;
       try {
-        const { check } = await import('@tauri-apps/plugin-updater');
-        const { ask } = await import('@tauri-apps/plugin-dialog');
+        const { check } = await import("@tauri-apps/plugin-updater");
+        const { ask } = await import("@tauri-apps/plugin-dialog");
         const update = await check();
         if (update?.available) {
           const yes = await ask(
             `¡Nueva versión disponible! (${update.version})\n¿Querés instalar la actualización ahora?`,
-            { title: 'Actualización disponible', kind: 'info' }
+            { title: "Actualización disponible", kind: "info" },
           );
           if (yes) {
             await update.downloadAndInstall();
-            const { relaunch } = await import('@tauri-apps/plugin-process');
+            const { relaunch } = await import("@tauri-apps/plugin-process");
             await relaunch();
           }
         }
       } catch (e) {
-        console.error('Error al chequear updates:', e);
+        console.error("Error al chequear updates:", e);
       }
     };
     checkForUpdates();
@@ -142,16 +144,24 @@ export default function App() {
     let unlisten: (() => void) | null = null;
     const setupFileDrop = async () => {
       try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
         const win = getCurrentWindow();
         unlisten = await win.onDragDropEvent((event) => {
-          if (event.payload.type === 'drop') {
+          if (event.payload.type === "drop") {
             const paths: string[] = event.payload.paths;
             if (paths.length === 0) return;
             const firstPath = paths[0];
-            const ext = firstPath.split('.').pop()?.toLowerCase() || '';
-            const audioExts = ['mp3', 'wav', 'm4a', 'ogg', 'flac', 'mp4', 'webm'];
-            const docExts = ['pdf', 'docx', 'txt', 'doc'];
+            const ext = firstPath.split(".").pop()?.toLowerCase() || "";
+            const audioExts = [
+              "mp3",
+              "wav",
+              "m4a",
+              "ogg",
+              "flac",
+              "mp4",
+              "webm",
+            ];
+            const docExts = ["pdf", "docx", "txt", "doc"];
             if (audioExts.includes(ext)) {
               setAudioPath(firstPath);
             } else if (docExts.includes(ext)) {
@@ -160,22 +170,31 @@ export default function App() {
           }
         });
       } catch (e) {
-        console.error('Error al configurar drag&drop:', e);
+        console.error("Error al configurar drag&drop:", e);
       }
     };
     setupFileDrop();
-    return () => { unlisten?.(); };
+    return () => {
+      unlisten?.();
+    };
   }, []);
 
   // 1. Cargar persistencia al iniciar
   useEffect(() => {
-    const waitForBackend = async (retries = 20, delayMs = 1500): Promise<boolean> => {
+    const waitForBackend = async (
+      retries = 20,
+      delayMs = 1500,
+    ): Promise<boolean> => {
       for (let i = 0; i < retries; i++) {
         try {
-          const res = await fetch("http://localhost:8000/", { signal: AbortSignal.timeout(1000) });
+          const res = await fetch("http://localhost:8000/", {
+            signal: AbortSignal.timeout(1000),
+          });
           if (res.ok) return true;
-        } catch (_) { /* backend no listo */ }
-        await new Promise(r => setTimeout(r, delayMs));
+        } catch (_) {
+          /* backend no listo */
+        }
+        await new Promise((r) => setTimeout(r, delayMs));
       }
       return false;
     };
@@ -200,20 +219,23 @@ export default function App() {
     const init = async () => {
       await startBackend();
       // Esperar que el backend responda (hasta 30seg) antes de cargar settings
-      const ready = await waitForBackend();
+      // Esperar que el backend responda (hasta 15seg) antes de cargar settings
+      const ready = await waitForBackend(10, 1500);
       if (!ready) {
         console.error("Backend no respondió después del tiempo de espera.");
-        setDeviceInfo("Error: Servidor no responde");
+        setDeviceInfo("Motor no iniciado");
         return;
       }
-      
-      // Obtener info del dispositivo desde el root del backend
+
+      // Obtener info del dispositivo desde el root del backend (con timeout)
       try {
-        const rootRes = await fetch("http://localhost:8000/");
+        const rootRes = await fetch("http://localhost:8000/", {
+          signal: AbortSignal.timeout(2000),
+        });
         const rootData = await rootRes.json();
         if (rootData.device) setDeviceInfo(rootData.device);
       } catch (e) {
-        setDeviceInfo("CPU (Modo seguro)");
+        setDeviceInfo("Procesador (CPU)");
       }
 
       await loadPersistedSettings();
@@ -265,7 +287,7 @@ export default function App() {
   // 2. Guardar persistencia ante cambios (localStorage inmediato + backend)
   useEffect(() => {
     // Guardar en localStorage inmediatamente (disponible sin backend)
-    localStorage.setItem('vtranscriptor_theme', theme);
+    localStorage.setItem("vtranscriptor_theme", theme);
     const syncSettings = async () => {
       try {
         await fetch("http://localhost:8000/settings", {
@@ -1653,8 +1675,12 @@ export default function App() {
               <div className="flex items-center gap-2 p-3 bg-[var(--primary)] bg-opacity-5 border border-[var(--primary)] border-opacity-10 rounded-xl">
                 <Activity size={16} className="text-[var(--primary)]" />
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-tighter">Hardware Engine</span>
-                  <span className="text-xs font-bold text-[var(--foreground)]">{deviceInfo}</span>
+                  <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-tighter">
+                    Hardware Engine
+                  </span>
+                  <span className="text-xs font-bold text-[var(--foreground)]">
+                    {deviceInfo}
+                  </span>
                 </div>
               </div>
 

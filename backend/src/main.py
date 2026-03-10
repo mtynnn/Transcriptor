@@ -6,7 +6,25 @@ import os
 import sys
 import json
 from datetime import datetime
-import torch
+
+# Hardware info cache
+_cached_device = None
+
+def get_device_info():
+    global _cached_device
+    if _cached_device is not None:
+        return _cached_device
+    
+    try:
+        import torch
+        if torch.cuda.is_available():
+            name = torch.cuda.get_device_name(0)
+            _cached_device = f"GPU ({name})"
+        else:
+            _cached_device = "Procesador (CPU)"
+    except:
+        _cached_device = "CPU (Standard)"
+    return _cached_device
 
 # Configuración de carpetas de datos (Persistencia en AppData)
 if os.name == 'nt': # Windows
@@ -113,14 +131,10 @@ class DriveUploadRequest(BaseModel):
 # Endpoints
 @app.get("/")
 def read_root():
-    device_info = "CPU"
-    if torch.cuda.is_available():
-        device_info = f"GPU ({torch.cuda.get_device_name(0)})"
-    
     return {
         "status": "ok", 
         "app": "vTranscriptor",
-        "device": device_info
+        "device": get_device_info()
     }
 
 @app.get("/progress")
