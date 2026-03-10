@@ -4,21 +4,21 @@ from docx import Document
 
 class AudioTranscriber:
     def __init__(self, model_size="base", compute_type="int8", device="auto"):
-        import torch
+        import ctranslate2
+        self.model_size = model_size
         """
         Inicializa Faster-Whisper. Detecta automáticamente si hay GPU (CUDA).
         """
         if device == "auto":
-            # Detectar específicamente NVIDIA CUDA
-            if torch.cuda.is_available():
-                gpu_name = torch.cuda.get_device_name(0)
-                print(f"[GPU] ¡NVIDIA detectada: {gpu_name}! Usando aceleración por hardware.")
+            # ctranslate2 es el motor interno de faster-whisper. Usarlo no falla en PyInstaller.
+            if ctranslate2.get_cuda_device_count() > 0:
+                print(f"[GPU] ¡NVIDIA (o CUDA) detectada! Usando aceleración por hardware.")
                 device = "cuda"
                 # En Windows, float16 es lo más rápido y estable para GPUs NVIDIA
                 if compute_type == "int8":
                     compute_type = "float16"
             else:
-                print("[CPU] No se detectó GPU NVIDIA compatible. Usando procesador standard.")
+                print("[CPU] No se detectó GPU CUDA compatible. Usando procesador.")
                 device = "cpu"
                 compute_type = "int8"
 

@@ -16,10 +16,10 @@ def get_device_info():
         return _cached_device
     
     try:
-        import torch
-        if torch.cuda.is_available():
-            name = torch.cuda.get_device_name(0)
-            _cached_device = f"GPU ({name})"
+        import ctranslate2
+        # ctranslate2 es lo que realmente usa faster-whisper internamente
+        if ctranslate2.get_cuda_device_count() > 0:
+            _cached_device = "GPU (Aceleración Activa)"
         else:
             _cached_device = "Procesador (CPU)"
     except:
