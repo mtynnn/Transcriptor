@@ -7,7 +7,19 @@ import sys
 import json
 from datetime import datetime
 
-# Configuración de carpetas
+# Configuración de carpetas de datos (Persistencia en AppData)
+if os.name == 'nt': # Windows
+    base_data_dir = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'vTranscriptor')
+else:
+    base_data_dir = os.path.expanduser('~/.vtranscriptor')
+
+if not os.path.exists(base_data_dir):
+    os.makedirs(base_data_dir)
+
+HISTORY_FILE = os.path.join(base_data_dir, "history.json")
+SETTINGS_FILE = os.path.join(base_data_dir, "settings.json")
+
+# Importar lógica local
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir)
@@ -18,8 +30,9 @@ import drive_api
 
 app = FastAPI(title="vTranscriptor API")
 
-HISTORY_FILE = "history.json"
-SETTINGS_FILE = "settings.json"
+# Asegurar que uvicorn use el puerto y host correcto para Tauri
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8000
 
 # Persistence Utils
 def get_history():

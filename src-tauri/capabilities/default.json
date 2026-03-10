@@ -11,7 +11,7 @@
       "identifier": "shell:allow-spawn",
       "allow": [
         {
-          "name": "bin/vtranscriptor-engine",
+          "name": "vtranscriptor-engine",
           "sidecar": true
         }
       ]
@@ -20,7 +20,7 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "name": "bin/vtranscriptor-engine",
+          "name": "vtranscriptor-engine",
           "sidecar": true
         }
       ]

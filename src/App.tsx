@@ -111,6 +111,17 @@ export default function App() {
 
   // 1. Cargar persistencia al iniciar
   useEffect(() => {
+    const waitForBackend = async (retries = 20, delayMs = 1500): Promise<boolean> => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const res = await fetch("http://localhost:8000/", { signal: AbortSignal.timeout(1000) });
+          if (res.ok) return true;
+        } catch (_) { /* backend no listo */ }
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+      return false;
+    };
+
     const startBackend = async () => {
       if (window.__TAURI_INTERNALS__) {
         try {
@@ -127,7 +138,18 @@ export default function App() {
         }
       }
     };
-    startBackend();
+
+    const init = async () => {
+      await startBackend();
+      // Esperar que el backend responda (hasta 30seg) antes de cargar settings
+      const ready = await waitForBackend();
+      if (!ready) {
+        console.error("Backend no respondió después del tiempo de espera.");
+        return;
+      }
+      await loadPersistedSettings();
+      fetchDriveAccounts();
+    };
 
     const loadPersistedSettings = async () => {
       try {
@@ -153,8 +175,7 @@ export default function App() {
         console.error("Error al cargar ajustes:", e);
       }
     };
-    loadPersistedSettings();
-    fetchDriveAccounts();
+    init();
   }, []);
 
   const fetchDriveAccounts = async () => {
