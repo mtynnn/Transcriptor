@@ -423,6 +423,8 @@ export default function App() {
   // Drop handler para modo navegador (fallback)
   const handleAudioDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    if (window.__TAURI_INTERNALS__) return; // Dejar que el listener global lo maneje
+
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
@@ -434,6 +436,8 @@ export default function App() {
 
   const handleContextDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    if (window.__TAURI_INTERNALS__) return; // Dejar que el listener global lo maneje
+
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
@@ -1063,6 +1067,7 @@ export default function App() {
                         {/* Audio Player Improvement */}
                         <div className="bg-[var(--secondary)] p-4 rounded-2xl border border-[var(--border)] shadow-inner">
                           <audio
+                            key={audioPath}
                             src={`http://localhost:8000/stream-audio?path=${encodeURIComponent(audioPath)}`}
                             controls
                             className="w-full h-10"
