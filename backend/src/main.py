@@ -139,7 +139,7 @@ async def stream_audio(path: str = Query(...)):
     return FileResponse(path)
 
 @app.post("/export")
-async def export_file(request: ExportRequest):
+def export_file(request: ExportRequest):
     global _transcriber_instance
     try:
         # Carpeta base: Documents/vTranscriptor/Categoria
@@ -165,7 +165,7 @@ async def export_file(request: ExportRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/transcribe")
-async def transcribe_audio(request: TranscriptionRequest):
+def transcribe_audio(request: TranscriptionRequest):
     global _transcriber_instance, current_progress
     
     if not os.path.exists(request.audio_path):
@@ -219,7 +219,7 @@ async def transcribe_audio(request: TranscriptionRequest):
 # ================================
 
 @app.get("/drive/accounts")
-async def get_drive_accounts():
+def get_drive_accounts():
     try:
         accounts = drive_api.list_accounts()
         return {"accounts": accounts}
@@ -227,7 +227,7 @@ async def get_drive_accounts():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/drive/auth")
-async def auth_drive_account(account_name: str = Query(...)):
+def auth_drive_account(account_name: str = Query(...)):
     try:
         # Esto abrirá el navegador en la PC donde corre el servidor (la tuya)
         creds = drive_api.get_credentials(account_name)
@@ -238,7 +238,7 @@ async def auth_drive_account(account_name: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/drive/list")
-async def list_drive_folder(req: DriveListRequest):
+def list_drive_folder(req: DriveListRequest):
     try:
         service = drive_api.get_drive_service(req.account_name)
         files = drive_api.list_files_in_folder(service, req.folder_id)
@@ -247,7 +247,7 @@ async def list_drive_folder(req: DriveListRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/drive/download")
-async def download_drive_file(req: DriveDownloadRequest):
+def download_drive_file(req: DriveDownloadRequest):
     try:
         service = drive_api.get_drive_service(req.account_name)
         # Bajar a carpeta temporal local
@@ -262,7 +262,7 @@ async def download_drive_file(req: DriveDownloadRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/drive/upload")
-async def upload_drive_file(req: DriveUploadRequest):
+def upload_drive_file(req: DriveUploadRequest):
     try:
         service = drive_api.get_drive_service(req.account_name)
         # 1. Crear o buscar carpeta base
