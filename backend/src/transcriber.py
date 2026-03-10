@@ -9,19 +9,20 @@ class AudioTranscriber:
         Inicializa Faster-Whisper. Detecta automáticamente si hay GPU (CUDA).
         """
         if device == "auto":
-            # Intentar detectar CUDA disponible con torch
+            # Detectar específicamente NVIDIA CUDA
             if torch.cuda.is_available():
-                print("[GPU] ¡NVIDIA CUDA detectada! Usando aceleración por hardware.")
+                gpu_name = torch.cuda.get_device_name(0)
+                print(f"[GPU] ¡NVIDIA detectada: {gpu_name}! Usando aceleración por hardware.")
                 device = "cuda"
-                # En Windows a veces hay que forzar float16 para que corra bien en GPU
+                # En Windows, float16 es lo más rápido y estable para GPUs NVIDIA
                 if compute_type == "int8":
                     compute_type = "float16"
             else:
-                print("[CPU] No se detectó GPU compatible. Usando procesador standard.")
+                print("[CPU] No se detectó GPU NVIDIA compatible. Usando procesador standard.")
                 device = "cpu"
-                compute_type = "int8" # Int8 es ideal para CPU
+                compute_type = "int8"
 
-        print(f"Inicializando modelo {model_size} en modo {device}...")
+        print(f"Inicializando motor con modelo {model_size} en {device} ({compute_type})...")
         self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
         print("Modelo inicializado correctamente.")
 

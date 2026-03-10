@@ -59,6 +59,7 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
+  const [deviceInfo, setDeviceInfo] = useState("Detectando hardware...");
   const [theme, setTheme] = useState(() => localStorage.getItem('vtranscriptor_theme') || 'dark'); // persistencia local inmediata
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -202,8 +203,19 @@ export default function App() {
       const ready = await waitForBackend();
       if (!ready) {
         console.error("Backend no respondió después del tiempo de espera.");
+        setDeviceInfo("Error: Servidor no responde");
         return;
       }
+      
+      // Obtener info del dispositivo desde el root del backend
+      try {
+        const rootRes = await fetch("http://localhost:8000/");
+        const rootData = await rootRes.json();
+        if (rootData.device) setDeviceInfo(rootData.device);
+      } catch (e) {
+        setDeviceInfo("CPU (Modo seguro)");
+      }
+
       await loadPersistedSettings();
       fetchDriveAccounts();
     };
@@ -1637,6 +1649,15 @@ export default function App() {
               </button>
             </div>
             <div className="space-y-4">
+              {/* Hardware Status Badge */}
+              <div className="flex items-center gap-2 p-3 bg-[var(--primary)] bg-opacity-5 border border-[var(--primary)] border-opacity-10 rounded-xl">
+                <Activity size={16} className="text-[var(--primary)]" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-tighter">Hardware Engine</span>
+                  <span className="text-xs font-bold text-[var(--foreground)]">{deviceInfo}</span>
+                </div>
+              </div>
+
               <div className="space-y-2 text-left">
                 <label className="text-xs font-bold text-[var(--muted)] uppercase">
                   Modelo Predeterminado
