@@ -1440,7 +1440,7 @@ export default function App() {
                       {activeHistoryItem && (
                         <button
                           onClick={handleSaveTranscription}
-                          className="bg-[var(--primary)] bg-opacity-10 hover:bg-opacity-20 text-[var(--primary)] px-4 py-1.5 rounded-full flex items-center gap-2 transition-all shadow-sm"
+                          className="btn-primary px-4 py-1.5 text-xs rounded-full shadow-sm"
                         >
                           <Save size={14} />
                           Guardar Cambios
