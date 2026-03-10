@@ -34,5 +34,16 @@
     "externalBin": [
       "vtranscriptor-engine"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNBMTY4RjdENUNCODVERTQKUldUa1hiaGNmWThXT3VUN2pxOHdsWEkzaU9tQzVnQ1N3Z0FnVndkWEwzQjdyM2lzYlVaaXpzSXUK",
+      "endpoints": [
+        "https://github.com/mtynnn/Transcriptor/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

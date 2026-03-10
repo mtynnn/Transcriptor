@@ -109,6 +109,32 @@ export default function App() {
   const [showAccountNamePrompt, setShowAccountNamePrompt] = useState(false);
   const [accountNameInput, setAccountNameInput] = useState("");
 
+  // Auto-updater: chequear updates al iniciar la app
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      if (!window.__TAURI_INTERNALS__) return;
+      try {
+        const { check } = await import('@tauri-apps/plugin-updater');
+        const { ask } = await import('@tauri-apps/plugin-dialog');
+        const update = await check();
+        if (update?.available) {
+          const yes = await ask(
+            `¡Nueva versión disponible! (${update.version})\n¿Querés instalar la actualización ahora?`,
+            { title: 'Actualización disponible', kind: 'info' }
+          );
+          if (yes) {
+            await update.downloadAndInstall();
+            const { relaunch } = await import('@tauri-apps/plugin-process');
+            await relaunch();
+          }
+        }
+      } catch (e) {
+        console.error('Error al chequear updates:', e);
+      }
+    };
+    checkForUpdates();
+  }, []);
+
   // 1. Cargar persistencia al iniciar
   useEffect(() => {
     const waitForBackend = async (retries = 20, delayMs = 1500): Promise<boolean> => {
