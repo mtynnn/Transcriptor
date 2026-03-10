@@ -46,9 +46,9 @@ jobs:
           pyinstaller --noconfirm vtranscriptor-engine.spec
 
       - name: prepare sidecar
+        shell: bash
         run: |
-          mkdir -p src-tauri/bin
-          cp dist/vtranscriptor-engine.exe src-tauri/bin/vtranscriptor-engine-x86_64-pc-windows-msvc.exe
+          cp dist/vtranscriptor-engine.exe src-tauri/vtranscriptor-engine-x86_64-pc-windows-msvc.exe
 
       - name: install frontend dependencies
         run: npm install
