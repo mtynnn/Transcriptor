@@ -1,30 +1,39 @@
 import os
 from pptx import Presentation
 import yake
-
-from pptx import Presentation
-import yake
 from pypdf import PdfReader
 
 def extract_text_from_context(file_path: str) -> str:
     """Extrae todo el texto de un archivo PPTX o PDF."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Archivo no encontrado: {file_path}")
-    
+
     ext = os.path.splitext(file_path)[1].lower()
     text_runs = []
 
     if ext in ['.pptx', '.ppt']:
-        prs = Presentation(file_path)
-        for slide in prs.slides:
-            for shape in slide.shapes:
-                if hasattr(shape, "text"):
-                    text_runs.append(shape.text)
+        try:
+            prs = Presentation(file_path)
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        text_runs.append(shape.text)
+        except Exception as e:
+            raise ValueError(f"No se pudo leer el archivo PPTX (puede estar corrupto): {e}")
     elif ext == '.pdf':
-        reader = PdfReader(file_path)
-        for page in reader.pages:
-            text_runs.append(page.extract_text())
-    
+        try:
+            reader = PdfReader(file_path)
+            if reader.is_encrypted:
+                raise ValueError("El PDF está encriptado con contraseña. No se puede extraer texto.")
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text_runs.append(page_text)
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"No se pudo leer el PDF (puede estar corrupto): {e}")
+
     return "\n".join(text_runs)
 
 

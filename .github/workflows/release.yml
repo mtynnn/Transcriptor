@@ -70,6 +70,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller -r backend/requirements.txt
 
+      - name: verify CUDA libraries for ctranslate2
+        if: steps.cache-backend-exe.outputs.cache-hit != 'true'
+        run: |
+          python -c "from PyInstaller.utils.hooks import collect_dynamic_libs; libs = collect_dynamic_libs('ctranslate2'); print(f'Found {len(libs)} dynamic libs:'); [print(f'  {l[0]}') for l in libs]"
+
       - name: build python backend
         if: steps.cache-backend-exe.outputs.cache-hit != 'true'
         run: |

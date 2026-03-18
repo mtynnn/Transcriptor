@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
 
 block_cipher = None
 
@@ -13,6 +13,10 @@ datas = [
 datas += collect_data_files('faster_whisper')
 # Incluir los assets de ctranslate2 (motor de inferencia)
 datas += collect_data_files('ctranslate2')
+
+# Incluir DLLs CUDA de ctranslate2 (cublas64_12.dll, cublasLt64_12.dll, cudnn, etc.)
+# Esto permite que GPU funcione en PCs sin CUDA Toolkit instalado
+binaries = collect_dynamic_libs('ctranslate2')
 
 hiddenimports = [
     'uvicorn.logging',
@@ -32,7 +36,7 @@ hiddenimports = [
 a = Analysis(
     ['backend/src/main.py'],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

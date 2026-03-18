@@ -6,8 +6,10 @@ class AudioTranscriber:
     def __init__(self, model_size="base", compute_type="int8", device="auto"):
         import ctranslate2
         self.model_size = model_size
+        self.actual_device = "cpu"
         """
         Inicializa Faster-Whisper. Detecta automáticamente si hay GPU (CUDA).
+        Si CUDA falla (ej: cublas64_12.dll no encontrada), cae a CPU automáticamente.
         """
         if device == "auto":
             # ctranslate2 es el motor interno de faster-whisper. Usarlo no falla en PyInstaller.
@@ -23,29 +25,58 @@ class AudioTranscriber:
                 compute_type = "int8"
 
         print(f"Inicializando motor con modelo {model_size} en {device} ({compute_type})...")
-        self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
-        print("Modelo inicializado correctamente.")
+        try:
+            self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
+            self.actual_device = device
+        except Exception as e:
+            if device == "cuda":
+                print(f"[FALLBACK] Error al iniciar CUDA: {e}")
+                print("[FALLBACK] Reintentando con CPU. La transcripción funcionará pero será más lenta.")
+                device = "cpu"
+                compute_type = "int8"
+                self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
+                self.actual_device = "cpu"
+            else:
+                raise
+        print(f"Modelo inicializado correctamente en {self.actual_device}.")
 
-    def transcribe(self, audio_path: str, initial_prompt: str = None, progress_callback=None) -> list:
-        """
-        Transcribe el audio y reporta el progreso real a través de un callback.
-        """
-        if not os.path.exists(audio_path):
-            raise FileNotFoundError(f"Archivo de audio no encontrado: {audio_path}")
-
-        print(f"Empezando transcripción. Prompt inicial: {initial_prompt[:50]}..." if initial_prompt else "Empezando transcripción sin prompt.")
-        
-        segments, info = self.model.transcribe(
+    def _run_transcribe(self, audio_path: str, initial_prompt: str, device: str):
+        """Ejecuta la transcripción en el device dado."""
+        return self.model.transcribe(
             audio_path,
             initial_prompt=initial_prompt,
             vad_filter=True,
             vad_parameters=dict(min_silence_duration_ms=500),
             task="transcribe"
         )
-        
+
+    def transcribe(self, audio_path: str, initial_prompt: str = None, progress_callback=None) -> list:
+        """
+        Transcribe el audio y reporta el progreso real a través de un callback.
+        Si la GPU se queda sin memoria durante la transcripción, cae a CPU automáticamente.
+        """
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Archivo de audio no encontrado: {audio_path}")
+
+        print(f"Empezando transcripción. Prompt inicial: {initial_prompt[:50]}..." if initial_prompt else "Empezando transcripción sin prompt.")
+
+        try:
+            segments, info = self._run_transcribe(audio_path, initial_prompt, self.actual_device)
+        except Exception as e:
+            error_str = str(e).lower()
+            is_oom = any(k in error_str for k in ("out of memory", "cuda error", "cublas", "cudnn", "failed to allocate"))
+            if is_oom and self.actual_device == "cuda":
+                print(f"[FALLBACK] Error de GPU durante transcripción: {e}")
+                print("[FALLBACK] Recargando modelo en CPU para este archivo...")
+                self.model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
+                self.actual_device = "cpu"
+                segments, info = self._run_transcribe(audio_path, initial_prompt, "cpu")
+            else:
+                raise
+
         total_duration = info.duration
         print(f"Idioma detectado: {info.language} ({info.language_probability * 100:.2f}%) | Duración: {total_duration:.2f}s")
-        
+
         segment_list = []
         for segment in segments:
             segment_list.append(segment)
@@ -53,10 +84,10 @@ class AudioTranscriber:
                 # Calcular progreso basado en la posición actual del audio
                 current_percent = int((segment.end / total_duration) * 100)
                 progress_callback(min(current_percent, 99)) # Reservamos el 100 para el final
-            
+
         if progress_callback:
             progress_callback(100)
-            
+
         return segment_list
 
     def format_to_fluid_paragraphs(self, segments: list) -> str:

@@ -14,15 +14,42 @@ def get_device_info():
     global _cached_device
     if _cached_device is not None:
         return _cached_device
-    
+
     try:
         import ctranslate2
         # ctranslate2 es lo que realmente usa faster-whisper internamente
         if ctranslate2.get_cuda_device_count() > 0:
-            _cached_device = "GPU (Aceleración Activa)"
+            # Verificar que las CUDA runtime libs existan (cublas64_12.dll, etc.)
+            import ctypes
+            cuda_libs_ok = False
+            # Probar cargar la DLL de cuBLAS (versiones 12 o 11)
+            # Usamos find_library para evitar warnings de PyInstaller con WinDLL hardcodeado
+            for _lib in ("cublas64_12", "cublas64_11", "cublas"):
+                try:
+                    ctypes.CDLL(_lib + ".dll")
+                    cuda_libs_ok = True
+                    break
+                except OSError:
+                    continue
+            # Si no se encontró como DLL del sistema, verificar que ctranslate2.dll exista
+            # (versiones nuevas de ctranslate2 ya incluyen cublas internamente)
+            if not cuda_libs_ok:
+                try:
+                    import ctranslate2 as _ct2
+                    _ct2_dir = os.path.dirname(_ct2.__file__)
+                    if os.path.exists(os.path.join(_ct2_dir, "ctranslate2.dll")):
+                        cuda_libs_ok = True  # ctranslate2 bundlea sus propias CUDA libs
+                except Exception:
+                    pass
+
+            if cuda_libs_ok:
+                _cached_device = "GPU (Aceleración Activa)"
+            else:
+                _cached_device = "GPU detectada (modo CPU - libs CUDA no encontradas)"
         else:
             _cached_device = "Procesador (CPU)"
-    except:
+    except Exception as e:
+        print(f"[Device Detection] Error: {e}")
         _cached_device = "CPU (Standard)"
     return _cached_device
 
@@ -32,8 +59,12 @@ if os.name == 'nt': # Windows
 else:
     base_data_dir = os.path.expanduser('~/.vtranscriptor')
 
-if not os.path.exists(base_data_dir):
-    os.makedirs(base_data_dir)
+try:
+    os.makedirs(base_data_dir, exist_ok=True)
+except Exception as e:
+    # Fallback al directorio del ejecutable si AppData no es accesible
+    print(f"[Init] No se pudo crear directorio en AppData: {e}. Usando directorio local.")
+    base_data_dir = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__))
 
 HISTORY_FILE = os.path.join(base_data_dir, "history.json")
 SETTINGS_FILE = os.path.join(base_data_dir, "settings.json")
@@ -82,11 +113,11 @@ def save_settings(settings):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(settings, f, ensure_ascii=False, indent=2)
 
-# Enable CORS
+# Enable CORS — restringido a localhost para mayor seguridad
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=["http://localhost", "http://127.0.0.1", "tauri://localhost"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -190,12 +221,28 @@ async def stream_audio(path: str = Query(...)):
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
     return FileResponse(path)
 
+def get_documents_dir() -> str:
+    """Obtiene el path real de Documents, compatible con Windows en cualquier idioma."""
+    if os.name == 'nt':
+        try:
+            import winreg
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                                 r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders")
+            docs_path, _ = winreg.QueryValueEx(key, "Personal")
+            winreg.CloseKey(key)
+            return docs_path
+        except Exception:
+            pass
+    # Fallback universal
+    return os.path.join(os.path.expanduser("~"), "Documents")
+
+
 @app.post("/export")
 def export_file(request: ExportRequest):
     global _transcriber_instance
     try:
-        # Carpeta base: Documents/vTranscriptor/Categoria
-        base_path = os.path.join(os.path.expanduser("~"), "Documents", "vTranscriptor")
+        # Carpeta base: Documents/vTranscriptor/Categoria (compatible con Windows en cualquier idioma)
+        base_path = os.path.join(get_documents_dir(), "vTranscriptor")
         category_path = os.path.join(base_path, request.category)
         
         if not os.path.exists(category_path):

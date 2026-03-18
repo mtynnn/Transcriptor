@@ -9,12 +9,26 @@ from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CREDENTIALS_FILE = os.path.join(BASE_DIR, 'credentials.json')
-TOKENS_DIR = os.path.join(BASE_DIR, 'drive_tokens')
+# PyInstaller: sys.executable apunta al .exe; en dev, usamos __file__ para encontrar credentials.json
+import sys
+if getattr(sys, 'frozen', False):
+    # Ejecutable PyInstaller: credentials.json está junto al .exe
+    _exe_dir = os.path.dirname(sys.executable)
+else:
+    # Desarrollo: credentials.json está en el root del proyecto (2 niveles arriba)
+    _exe_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+CREDENTIALS_FILE = os.path.join(_exe_dir, 'credentials.json')
+
+# Tokens de Google Drive en AppData para que persistan entre actualizaciones
+if os.name == 'nt':
+    _appdata = os.environ.get('APPDATA', os.path.expanduser('~'))
+    TOKENS_DIR = os.path.join(_appdata, 'vTranscriptor', 'drive_tokens')
+else:
+    TOKENS_DIR = os.path.join(os.path.expanduser('~'), '.vtranscriptor', 'drive_tokens')
 
 if not os.path.exists(TOKENS_DIR):
-    os.makedirs(TOKENS_DIR)
+    os.makedirs(TOKENS_DIR, exist_ok=True)
 
 def get_credentials(account_name: str) -> Credentials:
     """Obtiene crendeciales para una cuenta específica."""
@@ -71,11 +85,11 @@ def list_files_in_folder(service, folder_id='root'):
 def download_file(service, file_id: str, dest_path: str):
     """Descarga un archivo desde Drive a una ruta local."""
     request = service.files().get_media(fileId=file_id)
-    fh = io.FileIO(dest_path, 'wb')
-    downloader = MediaIoBaseDownload(fh, request)
-    done = False
-    while done is False:
-        status, done = downloader.next_chunk()
+    with io.FileIO(dest_path, 'wb') as fh:
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
     return dest_path
 
 def upload_file(service, file_path: str, title: str, parent_folder_id: str = 'root'):
